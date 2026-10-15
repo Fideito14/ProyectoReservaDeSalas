@@ -1,4 +1,4 @@
-package cl.DSY1105.reservasalas.ui
+package cl.DSY1105.reservasalas.ui.views
 
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.*
@@ -10,30 +10,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cl.DSY1105.reservasalas.data.*
+import cl.DSY1105.reservasalas.data.room.Sala
+import cl.DSY1105.reservasalas.viewmodel.AgendaViewModel
 import cl.DSY1105.reservasalas.ui.theme.Paleta
+import cl.DSY1105.reservasalas.utils.Bloques
 import java.util.Calendar
-
-@Composable
-fun LoginScreen(vm: AgendaViewModel, onOk: () -> Unit) {
-    var nombre by remember { mutableStateOf("") }
-    var coord by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text("Reserva de Salas", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(16.dp))
-        OutlinedTextField(nombre, { nombre = it }, label = { Text("Nombre") }, singleLine = true,
-            modifier = Modifier.fillMaxWidth())
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(coord, { coord = it }); Text("Soy Coordinador de Infraestructura")
-        }
-        Button(onClick = { vm.iniciar(nombre.trim(), coord); onOk() }, enabled = nombre.isNotBlank(),
-            modifier = Modifier.fillMaxWidth()) { Text("Ingresar") }
-    }
-}
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import cl.DSY1105.reservasalas.nativos.Notificaciones
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AgendaScreen(vm: AgendaViewModel, onSalir: () -> Unit) {
+fun AgendaScreen(vm: AgendaViewModel, onUsuarios: () -> Unit, onSalir: () -> Unit) {
     val ctx = LocalContext.current
     val salas by vm.salas.collectAsState()
     val reservas by vm.reservas.collectAsState()
@@ -44,6 +34,13 @@ fun AgendaScreen(vm: AgendaViewModel, onSalir: () -> Unit) {
     val coord by vm.esCoordinador.collectAsState()
     val msg by vm.mensaje.collectAsState()
     val snack = remember { SnackbarHostState() }
+    // Pide el permiso de notificaciones al entrar a la agenda (Android 13+)
+    val permiso = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 && !Notificaciones.tienePermiso(ctx)) {
+            permiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     var destino by remember { mutableStateOf<Pair<Sala, Int>?>(null) } // sala + bloque a reservar
     var actividad by remember { mutableStateOf("") }
 
@@ -55,7 +52,10 @@ fun AgendaScreen(vm: AgendaViewModel, onSalir: () -> Unit) {
             TopAppBar(
                 title = { Text(if (coord) "Agenda (Coordinador)" else "Agenda") },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                actions = { TextButton(onClick = onSalir) { Text("Salir") } })
+                actions = {
+                    if (coord) TextButton(onClick = onUsuarios) { Text("Usuarios") }
+                    TextButton(onClick = onSalir) { Text("Salir") }
+                })
         }
     ) { pad ->
         Column(Modifier.padding(pad).padding(16.dp)) {
@@ -77,9 +77,9 @@ fun AgendaScreen(vm: AgendaViewModel, onSalir: () -> Unit) {
                         Column(Modifier.padding(12.dp)) {
                             Text(sala.nombre, style = MaterialTheme.typography.titleMedium)
                             Text("Capacidad ${sala.capacidad}" +
-                                (if (sala.proyector) " · Proyector" else "") +
-                                (if (sala.computadores) " · Computadores" else "") +
-                                (if (sala.climatizacion) " · Clima" else ""),
+                                    (if (sala.proyector) " · Proyector" else "") +
+                                    (if (sala.computadores) " · Computadores" else "") +
+                                    (if (sala.climatizacion) " · Clima" else ""),
                                 style = MaterialTheme.typography.bodySmall, color = Paleta.TextoSec)
                             Bloques.lista.forEachIndexed { i, hora ->
                                 val r = reservas.find { it.salaId == sala.id && it.bloque == i }
