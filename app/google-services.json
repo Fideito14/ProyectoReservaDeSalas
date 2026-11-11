@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1078293936113",
+    "project_id": "bd-reserva-salas",
+    "storage_bucket": "bd-reserva-salas.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1078293936113:android:211c47d7b7d8af0e11f650",
+        "android_client_info": {
+          "package_name": "cl.DSY1105.reservasalas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC08uXI1r_1VelpAV_EiZ5-0diQPVpINs0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
