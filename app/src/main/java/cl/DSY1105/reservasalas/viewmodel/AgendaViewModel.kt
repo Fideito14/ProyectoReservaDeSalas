@@ -184,49 +184,99 @@ class AgendaViewModel(app: Application) : AndroidViewModel(app) {
             "La gestión de roles estará disponible al conectar el backend."
     }
 
-    // ---- Reservas locales provisionales ----
+
+    // ---- Reservas locales por grupo de bloques ----
+
+    // Mantiene compatibilidad con las pantallas que reservan un solo bloque.
     fun reservar(
         salaId: Long,
         bloque: Int,
         actividad: String
+    ) {
+        reservarBloques(salaId, listOf(bloque), actividad)
+    }
+
+    // Permite reservar uno o varios bloques consecutivos.
+    fun reservarBloques(
+        salaId: Long,
+        bloques: List<Int>,
+        actividad: String
     ) = viewModelScope.launch {
 
         try {
-            val ok = repo.reservar(
+            val bloquesOrdenados = bloques.distinct().sorted()
+
+            // Validar que existan bloques seleccionados.
+            if (bloquesOrdenados.isEmpty()) {
+                mensaje.value = "Selecciona al menos un bloque."
+                return@launch
+            }
+
+            // Validar índices de los bloques.
+            if (bloquesOrdenados.any { it !in Bloques.lista.indices }) {
+                mensaje.value = "Seleccionaste un bloque inválido."
+                return@launch
+            }
+
+            // Validar que sean consecutivos.
+            if (bloquesOrdenados.zipWithNext().any { (a, b) -> b != a + 1 }) {
+                mensaje.value = "Selecciona bloques consecutivos."
+                return@launch
+            }
+
+            if (actividad.isBlank()) {
+                mensaje.value = "Debes ingresar una actividad."
+                return@launch
+            }
+
+            // Un mismo identificador para todos los bloques.
+            val grupoId = java.util.UUID.randomUUID().toString()
+
+            val reservasGrupo = bloquesOrdenados.map { bloque ->
                 Reserva(
                     salaId = salaId,
                     fecha = fecha.value,
                     bloque = bloque,
                     relator = relator.value,
-                    actividad = actividad
+                    actividad = actividad.trim(),
+                    grupoId = grupoId
                 )
-            )
+            }
+
+            val ok = repo.reservarGrupo(reservasGrupo)
 
             if (ok) {
+                val horarios = bloquesOrdenados.joinToString(", ") {
+                    Bloques.lista[it]
+                }
+
                 Notificaciones.mostrar(
                     getApplication<Application>(),
                     "Reserva confirmada",
-                    "$actividad · ${Bloques.lista[bloque]} · ${fecha.value}"
+                    "$actividad · $horarios · ${fecha.value}"
                 )
             }
 
             mensaje.value = if (ok) {
-                "Reserva confirmada"
+                "Reserva confirmada correctamente."
             } else {
-                "Ese bloque ya fue reservado"
+                "Uno o más bloques ya están reservados."
             }
+
         } catch (e: Exception) {
             mensaje.value = "No se pudo realizar la reserva."
         }
     }
 
-    // ---- Cancelación local provisional ----
+    // ---- Cancelación de grupos de reservas ----
+
     fun cancelar(r: Reserva) = viewModelScope.launch {
         try {
-            repo.cancelar(r)
-            mensaje.value = "Reserva cancelada."
+            repo.cancelarReserva(r.id)
+            mensaje.value = "Bloque cancelado correctamente."
+
         } catch (e: Exception) {
-            mensaje.value = "No se pudo cancelar la reserva."
+            mensaje.value = "No se pudo cancelar el bloque."
         }
     }
 }

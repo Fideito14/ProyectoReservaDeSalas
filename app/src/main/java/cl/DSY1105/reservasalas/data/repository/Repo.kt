@@ -38,14 +38,23 @@ class Repo(
 
     fun reservas(fecha: String) = dao.reservas(fecha)
 
-    suspend fun reservar(r: Reserva): Boolean = try {
-        dao.insertar(r)
-        true
-    } catch (_: SQLiteConstraintException) {
-        false
+    suspend fun reservarGrupo(reservas: List<Reserva>): Boolean {
+        if (reservas.isEmpty()) return false
+
+        return try {
+            dao.insertarGrupo(reservas)
+            true
+        } catch (_: SQLiteConstraintException) {
+            false
+        } catch (_: Exception) {
+            false
+        }
     }
 
-    suspend fun cancelar(r: Reserva) = dao.eliminar(r)
+    suspend fun cancelarReserva(reservaId: Long) {
+        dao.eliminarReserva(reservaId)
+    }
+
 
     // ---- Usuarios ----
 
@@ -223,14 +232,16 @@ class Repo(
                     fecha = hoy,
                     bloque = 0,
                     relator = "Ana Pérez",
-                    actividad = "Excel Avanzado"
+                    actividad = "Excel Avanzado",
+                    grupoId = "demo_excel"
                 ),
                 Reserva(
                     salaId = 2,
                     fecha = hoy,
                     bloque = 1,
                     relator = "Luis Soto",
-                    actividad = "Python Básico"
+                    actividad = "Python Básico",
+                    grupoId = "demo_python"
                 )
             )
         )
