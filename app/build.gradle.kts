@@ -38,6 +38,14 @@ android {
 }
 
 dependencies {
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    // OkHttp (Retrofit lo usa por debajo, pero puedes añadirlo para interceptores o configuraciones personalizadas)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0") // Opcional para ver logs en Logcat
+    
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
 
