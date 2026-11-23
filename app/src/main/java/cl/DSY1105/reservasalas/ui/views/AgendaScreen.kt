@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cl.DSY1105.reservasalas.data.room.Sala
 import cl.DSY1105.reservasalas.viewmodel.AgendaViewModel
@@ -39,10 +40,13 @@ fun AgendaScreen(
     val yo by vm.relator.collectAsState()
     val coord by vm.esCoordinador.collectAsState()
     val msg by vm.mensaje.collectAsState()
+    val aviso by vm.aviso.collectAsState()
 
-    val snack = remember { SnackbarHostState() }
+    val snack = remember {
+        SnackbarHostState()
+    }
 
-    // Permiso de notificaciones Android 13+
+    // Permiso de notificaciones Android 13+.
     val permiso = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
@@ -56,7 +60,7 @@ fun AgendaScreen(
         }
     }
 
-    // Estado de selección de bloques
+    // Estado de selección de bloques.
     var salaSeleccionada by remember {
         mutableStateOf<Sala?>(null)
     }
@@ -73,11 +77,19 @@ fun AgendaScreen(
         mutableStateOf("")
     }
 
-    // Mostrar mensajes mediante Snackbar
+    // Mostrar mensajes mediante Snackbar.
     LaunchedEffect(msg) {
         msg?.let {
             snack.showSnackbar(it)
             vm.mensaje.value = null
+        }
+    }
+
+    // Mostrar errores o avisos.
+    LaunchedEffect(aviso) {
+        aviso?.let {
+            snack.showSnackbar(it)
+            vm.aviso.value = null
         }
     }
 
@@ -125,7 +137,8 @@ fun AgendaScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Filtros
+            // ---- Filtros ----
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -178,7 +191,8 @@ fun AgendaScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Leyenda
+            // ---- Leyenda ----
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -195,7 +209,8 @@ fun AgendaScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Lista de salas
+            // ---- Lista de salas ----
+
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -229,7 +244,8 @@ fun AgendaScreen(
 
                             Spacer(Modifier.height(8.dp))
 
-                            // Horarios de la sala
+                            // ---- Horarios de la sala ----
+
                             Bloques.lista.forEachIndexed { i, hora ->
 
                                 val r = reservas.find {
@@ -243,11 +259,13 @@ fun AgendaScreen(
 
                                 val puedeSeleccionar =
                                     salaSeleccionada == null ||
-                                            salaSeleccionada?.id == sala.id &&
                                             (
-                                                    bloquesSeleccionados.isEmpty() ||
-                                                            i == bloquesSeleccionados.last() + 1 ||
-                                                            seleccionado
+                                                    salaSeleccionada?.id == sala.id &&
+                                                            (
+                                                                    bloquesSeleccionados.isEmpty() ||
+                                                                            i == bloquesSeleccionados.last() + 1 ||
+                                                                            seleccionado
+                                                                    )
                                                     )
 
                                 Row(
@@ -281,9 +299,7 @@ fun AgendaScreen(
                                                         bloquesSeleccionados =
                                                             bloquesSeleccionados.dropLast(1)
 
-                                                        if (
-                                                            bloquesSeleccionados.isEmpty()
-                                                        ) {
+                                                        if (bloquesSeleccionados.isEmpty()) {
                                                             salaSeleccionada = null
                                                         }
                                                     }
@@ -314,9 +330,11 @@ fun AgendaScreen(
 
                                     } else {
 
+                                        // Reserva ocupada.
                                         Text(
-                                            "$hora · ${r.actividad} (${r.relator})",
-                                            color = MaterialTheme.colorScheme.error,
+                                            text = "$hora · ${r.actividad} (${r.relator})",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontWeight = FontWeight.SemiBold,
                                             modifier = Modifier.weight(1f)
                                         )
 
@@ -334,7 +352,8 @@ fun AgendaScreen(
                                 }
                             }
 
-                            // Acciones de selección
+                            // ---- Acciones de selección ----
+
                             if (
                                 salaSeleccionada?.id == sala.id &&
                                 bloquesSeleccionados.isNotEmpty()
@@ -378,7 +397,8 @@ fun AgendaScreen(
         }
     }
 
-    // Diálogo de confirmación
+    // ---- Diálogo de confirmación ----
+
     if (
         mostrarDialogo &&
         salaSeleccionada != null
