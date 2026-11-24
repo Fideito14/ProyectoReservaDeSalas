@@ -38,13 +38,14 @@ android {
 }
 
 dependencies {
-    // Retrofit
+    // Retrofit & OkHttp
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("org.jetbrains.kotlinx:kotlinkx-coroutines-anroid:1.9.0")
-    
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    //DataStore Preferences (Para JWT y Timestamp)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
